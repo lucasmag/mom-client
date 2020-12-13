@@ -12,24 +12,24 @@
             <md-button class="md-icon-button" @click="showAddConversation = true">
               <md-icon>person_add</md-icon>
             </md-button>
+
+            <md-button class="md-icon-button" @click="showAddTopic = true">
+              <md-icon>add_comment</md-icon>
+            </md-button>
           </div>
         </div>
 
         <div v-if="created" class="md-toolbar-row">
-          <md-tabs class="md-primary">
-            <md-tab md-label="Conversas"></md-tab>
-            <md-tab md-label="Tópicos"></md-tab>
+          <md-tabs class="md-primary" v-bind:md-active-tab="selectedTab">
+            <md-tab id="0" md-label="Conversas" @click="isTopic = false"></md-tab>
+            <md-tab id="1" md-label="Tópicos" @click="isTopic = true">
+            </md-tab>
           </md-tabs>
         </div>
       </md-app-toolbar>
       <md-app-content v-if="created">
-        <md-list>
-          <md-list-item v-for="user in friends" :key="user"
-          @click="enterChat(user)"
-          >
-            <span class="md-list-item-text">{{ user }}</span>
-          </md-list-item>
-        </md-list>
+        
+       <ChatList :isTopic="isTopic"></ChatList>
 
       </md-app-content>
     </md-app>
@@ -68,7 +68,25 @@
           <md-button class="md-primary" @click="showAddConversation = false"
               >Cancelar</md-button
           >
-          <md-button class="md-primary" @click="addConversation(receiver)"
+          <md-button class="md-primary" @click="addFriend(receiver)"
+              >Adicionar</md-button
+          >
+      </md-dialog-actions>
+  </md-dialog>
+
+    <md-dialog :md-active.sync="showAddTopic" class="dialog">
+      <md-dialog-title style="text-align: center">Conectar em topico</md-dialog-title>
+
+      <md-field>
+          <label>Nome do topico</label>
+          <md-input v-model="receiver"></md-input>
+      </md-field>
+
+      <md-dialog-actions>
+          <md-button class="md-primary" @click="showAddTopic = false"
+              >Cancelar</md-button
+          >
+          <md-button class="md-primary" @click="addTopic(receiver)"
               >Adicionar</md-button
           >
       </md-dialog-actions>
@@ -114,22 +132,38 @@
 <script>
 const ipc = window.require('electron').ipcRenderer
 import { mapGetters } from 'vuex'
+import ChatList from './ChatList'
 
 export default {
   name: 'Manager',
+  components: {
+    ChatList,
+  },
+  props: {
+    wasAt: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       receiver: "",
       showAddUser: false,
-      showAddConversation: false
+      showAddConversation: false,
+      showAddTopic: false,
+      topicName: "",
+      isTopic: this.wasAt
     }
   },
   computed: {
-    ...mapGetters(['created', 'friends']),
+    ...mapGetters(['created']),
 
      username: {
         get () { return this.$store.state.username },
         set (username) { this.$store.commit("username", username) }
+    },
+    selectedTab: function () {
+      return this.isTopic ? "1" : "0"
     }
   },
   methods: {
@@ -141,24 +175,20 @@ export default {
 
         this.showAddUser = false
       },
-      addConversation: function (receiver) {
-        this.$store.commit("addFriend", receiver)
-        this.$store.commit("initConversations", {"queue": receiver})
+      addFriend: function (friend) {
+        this.$store.commit("initFriends", friend)
 
         this.showAddConversation = false
       },
-      enterChat: function(receiver) {
-        console.log(receiver);
-        this.$store.commit("prepareMessages", receiver)
-        this.$router.push({name: 'chat', params: { 'receiver': receiver }});
-      }
+      addTopic: function(topic) {
+        this.$store.commit("initTopics", topic)
 
+        const data = {"queue": this.$store.state.username, "topic": topic}
+        ipc.send("consume-topic", data)
+
+        this.showAddTopic = false
+      },
   },
-  created() {
-    ipc.on('updateMessages', (event, data) => {
-      console.log(data)
-    })
-  }
 }
 </script>
 

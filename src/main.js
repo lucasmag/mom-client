@@ -24,7 +24,7 @@ Vue.use(
 
 
 const routes = [
-  { name: 'home', path: '/', component: Manager },
+  { name: 'home', path: '/', component: Manager, props: true},
   { name: 'chat', path: '/chat', component: Chat, props: true},
 ]
 
@@ -42,14 +42,20 @@ new Vue({
 
 
 ipc.on('updateMessages', (event, data) => {
-  if(store.state.friends.includes(data["user"])) {
-    store.commit("insertInConversation", data)
-  }
+  console.log(data)
+  if(!data.isTopic) {
 
-  else {
-    store.commit("addFriend", data["user"])
-    const payload = {"queue": data["queue"] }
-    store.commit("initConversations", payload)
-    store.commit("insertInConversation", data)
-  }
+    if(!store.state.friends.includes(data.sentBy)) {
+      store.commit("initFriends", data.sentBy)
+    }
+
+    store.commit("insertInFriendConversation", data)
+  } else {
+
+    if(!store.state.topics.includes(data.sentTo)) {
+      store.commit("initTopics", data.sentTo)
+    }
+
+    store.commit("insertInTopicConversation", data)
+  }  
 })

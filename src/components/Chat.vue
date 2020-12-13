@@ -32,7 +32,7 @@ import { mapGetters } from 'vuex'
 export default {
   
     name: "Chat",
-    props: ["receiver"],
+    props: ["receiver", "isTopic"],
     data() {
         return {
             toSend: "",
@@ -41,23 +41,27 @@ export default {
     },
     computed: {
     ...mapGetters(['username', 'messages']),
-
     },
     methods: {
-        sendMessage: function () {
-            if (this.toSend !== ''){
-                const data = { "queue": this.receiver, "user": this.username, "message": this.toSend }
+      sendMessage: function () {
+        console.log(this.to);
+        if (this.toSend !== ''){
+          const data = {
+            "isTopic": this.isTopic,
+            "sentTo": this.receiver, 
+            "sentBy": this.username, 
+            "message": this.toSend
+          }
+          console.log(data);
+          this.$socket.emit("sendMessage", data)
+          if (!this.isTopic) this.$store.commit("insertInFriendConversation", data)
 
-                this.$socket.emit("sendMessage", data)
-                this.$store.commit("insertInConversation", data)
-
-                this.toSend = ''
-            }            
-        },
-        goBack: function() {
-          this.$router.push({name: 'home'})
+          this.toSend = ''
+        }        
+      },
+      goBack: function() {
+        this.$router.push({name: 'home', params: {"wasAt": this.isTopic}})
         }
-
     }
 };
 </script>
