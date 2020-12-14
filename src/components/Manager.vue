@@ -22,8 +22,7 @@
         <div v-if="created" class="md-toolbar-row">
           <md-tabs class="md-primary" v-bind:md-active-tab="selectedTab">
             <md-tab id="0" md-label="Conversas" @click="isTopic = false"></md-tab>
-            <md-tab id="1" md-label="Tópicos" @click="isTopic = true">
-            </md-tab>
+            <md-tab id="1" md-label="Tópicos" @click="isTopic = true"></md-tab>
           </md-tabs>
         </div>
       </md-app-toolbar>
@@ -47,11 +46,30 @@
       </md-field>
 
       <md-dialog-actions>
-          <md-button class="md-primary" @click="showAddUser = false"
+          <md-button class="md-primary" @click="clearUserCreationData"
               >Cancelar</md-button
           >
-          <md-button class="md-primary" @click="createUser(username)"
+          <md-button class="md-primary" @click="verifyUser(username)"
               >Criar</md-button
+          >
+      </md-dialog-actions>
+  </md-dialog>
+
+  <md-dialog :md-active.sync="showConfirmAddUser" class="dialog">
+      <md-dialog-title style="text-align: center">Já existe uma fila com este nome.<br>
+      Deseja vincular o novo usuário à esta fila?</md-dialog-title>
+
+      <md-field>
+          <label>Nome do usuário</label>
+          <md-input v-model="username"></md-input>
+      </md-field>
+
+      <md-dialog-actions>
+          <md-button class="md-primary" @click="clearUserCreationData"
+              >Cancelar</md-button
+          >
+          <md-button class="md-primary md-raised" @click="createUser(username)"
+              >Sim</md-button
           >
       </md-dialog-actions>
   </md-dialog>
@@ -92,41 +110,8 @@
       </md-dialog-actions>
   </md-dialog>
 
-    </div>
+  </div>
     
-    <!-- <div class="row">
-      <md-field>
-        <label>Nova fila</label>
-        <md-input v-model="queueName"></md-input>
-      </md-field>
-
-      <md-button class="md-primary" @click="createQueue(queueName)">Criar nova fila</md-button>
-    </div>
-    
-    <div class="row">
-      <md-field>
-        <label>Novo tópico</label>
-        <md-input v-model="topicName"></md-input>
-      </md-field>
-
-      <md-button class="md-primary" @click="createTopic(topicName)">Criar novo tópico</md-button>
-    </div>
-
-    <div class="row">
-      <md-field>
-        <label>Novo usuário</label>
-        <md-input v-model="username"></md-input>
-      </md-field>
-
-      <md-button class="md-primary" @click="createUser(username)">Criar usuário</md-button>
-    </div>
-
-    <md-list>
-      <md-list-item v-for="queue in queueList" :key="queue">
-        <span class="md-list-item-text">{{ queue }}</span>
-      </md-list-item>
-    </md-list> -->
-
 </template>
 
 <script>
@@ -152,7 +137,8 @@ export default {
       showAddConversation: false,
       showAddTopic: false,
       topicName: "",
-      isTopic: this.wasAt
+      isTopic: this.wasAt,
+      showConfirmAddUser: false
     }
   },
   computed: {
@@ -168,26 +154,47 @@ export default {
   },
   methods: {
       createUser: function (queue) {
+        this.userExists = false
         ipc.send('consume-messages', queue)
 
-        this.$store.commit("username", queue)
+        this.username = queue
         this.$store.commit("created")
 
+        this.showConfirmAddUser = false
         this.showAddUser = false
       },
+      verifyUser(queue) {
+        this.$socket.emit("userExists", queue, (exists) => {
+          if(exists) {
+            this.showConfirmAddUser = true
+            this.showAddUser = false
+          } else {
+            this.createUser(queue)
+          }
+        })
+      },
       addFriend: function (friend) {
-        this.$store.commit("initFriends", friend)
+        if(!this.$store.state.friends.includes(friend)) {
+          this.$store.commit("initFriends", friend)
 
-        this.showAddConversation = false
+          this.showAddConversation = false
+        }
       },
       addTopic: function(topic) {
-        this.$store.commit("initTopics", topic)
+        if(!this.$store.state.topics.includes(topic)) {
+          this.$store.commit("initTopics", topic)
 
-        const data = {"queue": this.$store.state.username, "topic": topic}
-        ipc.send("consume-topic", data)
+          const data = {"queue": this.$store.state.username, "topic": topic}
+          ipc.send("consume-topic", data)
 
-        this.showAddTopic = false
+          this.showAddTopic = false
+        }
       },
+      clearUserCreationData() {
+        this.showConfirmAddUser = false
+        this.showAddUser = false
+        this.username = ''
+      }
   },
 }
 </script>
@@ -214,7 +221,13 @@ export default {
   .md-dialog /deep/.md-dialog-container {
     max-width: 768px;
     padding: 30px
-}
+  }
+
+  .warning {
+      color: rgb(185, 73, 73);
+      font-style: oblique;
+  }
+
 
 
 </style>

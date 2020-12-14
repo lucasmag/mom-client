@@ -6,8 +6,8 @@
         <div class="chatArea">
             <ul class="messages">
                 <li class="log"
-                    v-for="message in messages"
-                    v-bind:key="message.message">
+                    v-for="(message, index) in messages"
+                    v-bind:key="index">
                     <div style="margin-bottom: 3px">
                     <span style="font-size: 12px; margin-right: 5px; color: #888"> {{ message.date }} </span>
                     <b>{{ message.user }}:</b> {{ message.message }}

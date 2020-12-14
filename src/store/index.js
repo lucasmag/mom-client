@@ -42,11 +42,11 @@ export default new Vuex.Store({
         }
       },
       prepareMessages: function (state, payload){
-        if (!payload.isTopic) {
+        if (!payload.isTopic)
           state.messages = state.friendsConversations[payload.receiver]
-        } else {
+        else
           state.messages = state.topicsConversations[payload.receiver]
-        }
+
       },
     },
     getters: {

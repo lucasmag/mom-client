@@ -1,18 +1,8 @@
 const { ipcMain } = require('electron')
 var amqp = require('amqplib/callback_api');
 
-
-var exec = require("child_process").exec
 console.log("Initializing client...")
-/*
-messages = {
-  ["lucas", "mat"]: [
-      {"username": "lucas", "message": "eae mano"},
-      {"username": "mat", "message": "tmj"},
-    ]
-}
 
-*/
 let messages = {}
 
 ipcMain.on('consume-messages', (event, queue) => {
@@ -60,7 +50,7 @@ ipcMain.on('consume-topic', (event, data) => {
         throw error1;
       }
 
-      channel.assertExchange('topic', 'direct', {
+      channel.assertExchange(data.topic, 'fanout', {
         durable: false
       });
 
@@ -69,7 +59,7 @@ ipcMain.on('consume-topic', (event, data) => {
       })
         console.log(' [*] Waiting for logs. To exit press CTRL+C');
 
-        channel.bindQueue(data.queue, 'topic', data.topic);
+        channel.bindQueue(data.queue, data.topic, '');
       
     });
   });
